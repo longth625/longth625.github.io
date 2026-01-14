@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nano Banana Pro - Studio v4</title>
+    <style>
+        :root {
+            --bg-color: #0d0d0d;
+            --sidebar-bg: #171717;
+            --chat-bg: #050505;
+            --input-bg: #212121;
+            --text-primary: #f0f0f0;
+            --text-secondary: #999;
+            --accent-color: #a855f7;
+            --accent-hover: #c084fc;
+            --msg-user: #262626;
+            --msg-ai: #171717;
+            --border-color: #262626;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
+
+        /* 左侧栏 */
+        .sidebar-left { width: 260px; background-color: var(--sidebar-bg); padding: 24px 16px; display: flex; flex-direction: column; gap: 20px; border-right: 1px solid var(--border-color); flex-shrink: 0; }
+        .logo { font-size: 18px; font-weight: 800; color: var(--accent-color); letter-spacing: 1px; margin-bottom: 10px; }
+        .setting-group { display: flex; flex-direction: column; gap: 8px; }
+        .setting-group label { font-size: 11px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; }
+        input, select, textarea { background: var(--input-bg); border: 1px solid var(--border-color); color: white; padding: 10px; border-radius: 8px; outline: none; font-size: 13px; }
+        .btn { background-color: var(--accent-color); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .btn-new { background: rgba(168, 85, 247, 0.1); color: var(--accent-color); border: 1px solid rgba(168, 85, 247, 0.3); margin-bottom: 10px; }
+
+        /* 中间区 */
+        .main-content { 
+            flex: 1; display: flex; flex-direction: column; background-color: var(--chat-bg); 
+            max-width: 850px; margin: 0 auto; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color);
+            position: relative;
+        }
+        .chat-history { flex: 1; padding: 30px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; }
+        .message { display: flex; gap: 16px; max-width: 90%; }
+        .message.user { align-self: flex-end; flex-direction: row-reverse; }
+        .message.ai { align-self: flex-start; }
+        .avatar { width: 34px; height: 34px; border-radius: 8px; background: #333; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+        .user .avatar { background: var(--accent-color); }
+        .bubble { background-color: var(--msg-ai); padding: 14px 18px; border-radius: 12px; line-height: 1.6; font-size: 14px; word-wrap: break-word; border: 1px solid var(--border-color); }
+        .user .bubble { background-color: var(--msg-user); border: none; }
+        .bubble img { max-width: 100%; border-radius: 10px; margin-top: 12px; border: 1px solid #333; cursor: zoom-in; }
+
+        /* 已上传预览 */
+        #previewContainer { display: flex; gap: 10px; padding: 0 20px; margin-bottom: 10px; overflow-x: auto; }
+        .preview-box { position: relative; width: 55px; height: 55px; flex-shrink: 0; }
+        .preview-box img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; border: 2px solid var(--accent-color); }
+        .preview-box .remove-x { position: absolute; top: -6px; right: -6px; background: #ef4444; color: white; width: 18px; height: 18px; border-radius: 50%; font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid var(--chat-bg); }
+
+        /* 拖拽覆盖层 */
+        #dragOverlay {
+            position: absolute; inset: 0; background: rgba(168, 85, 247, 0.15);
+            border: 3px dashed var(--accent-color); margin: 10px; border-radius: 20px;
+            display: none; align-items: center; justify-content: center;
+            font-size: 20px; font-weight: bold; color: var(--accent-color);
+            z-index: 1000; pointer-events: none; /* 重要：防止干扰 drop 事件 */
+        }
+
+        /* 输入区 */
+        .input-area { padding: 20px; background-color: var(--chat-bg); }
+        .input-wrapper { background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; transition: 0.2s; }
+        .input-wrapper:focus-within { border-color: var(--accent-color); }
+        textarea { width: 100%; background: transparent; border: none; color: white; height: 60px; resize: none; font-size: 14px; outline: none; }
+        .input-controls { display: flex; gap: 12px; align-items: center; margin-top: 8px; border-top: 1px solid #2d2d2d; padding-top: 10px; }
+
+        /* 右侧栏 */
+        .sidebar-right { width: 240px; background-color: var(--sidebar-bg); display: flex; flex-direction: column; flex-shrink: 0; }
+        .history-title { padding: 24px 16px 12px; font-size: 11px; font-weight: bold; color: var(--text-secondary); text-transform: uppercase; }
+        .session-list { flex: 1; overflow-y: auto; padding: 0 8px; }
+        .session-item { padding: 12px; margin-bottom: 4px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+        .session-item.active { background: #262626; color: var(--accent-color); font-weight: 600; }
+        .del-btn { opacity: 0; color: #666; cursor: pointer; }
+        .session-item:hover .del-btn { opacity: 1; }
+
+        .progress-bar-container { height: 4px; background: #222; border-radius: 2px; margin-top: 10px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: var(--accent-color); width: 0%; transition: width 0.3s; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar-left">
+        <div class="logo">BANANA STUDIO</div>
+        <button class="btn btn-new" onclick="createNewSession()">+ 新建会话</button>
+        <div class="setting-group">
+            <label>API Key</label>
+            <input type="password" id="apiKey" placeholder="输入 API Key..." onchange="saveConfig()">
+        </div>
+        <div class="setting-group">
+            <label>模型选择</label>
+            <select id="modelName" onchange="saveConfig()">
+                <option value="nano-banana-pro">Nano Banana Pro</option>
+                <option value="nano-banana-pro-4k-vip">Nano Banana Pro 4K VIP</option>
+                <option value="nano-banana-pro-vip">Nano Banana Pro VIP</option>
+                
+            </select>
+        </div>
+        <div class="setting-group">
+            <label>默认比例</label>
+            <select id="aspectRatio">
+                <option value="auto" selected>Auto (自动)</option>
+                <option value="1:1">1:1</option>
+                <option value="16:9">16:9</option>
+                <option value="9:16">9:16</option>
+                <option value="4:3">4:3</option>
+            </select>
+        </div>
+        <div class="setting-group">
+            <label>默认质量</label>
+            <select id="imageSize">
+                <option value="4K" selected>4K (超清)</option>
+                <option value="2K">2K (高清)</option>
+                <option value="1K">1K (标准)</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="main-content" id="mainDropZone">
+        <div id="dragOverlay">释放文件以上传参考图</div>
+        <div class="chat-history" id="chatHistory"></div>
+        <div id="previewContainer"></div>
+        <div class="input-area">
+            <div class="input-wrapper">
+                <textarea id="userInput" placeholder="输入提示词，或直接粘贴/拖入图片..."></textarea>
+                <div class="input-controls">
+                    <button class="btn" style="background:#333; padding:6px 12px;" onclick="document.getElementById('fileInput').click()">📷</button>
+                    <input type="file" id="fileInput" accept="image/*" hidden multiple onchange="handleFiles(this.files)">
+                    <span style="font-size:12px; color:#555; flex:1">支持拖拽图片到窗口</span>
+                    <button class="btn" id="sendBtn" style="padding:8px 24px;" onclick="send()">发送</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar-right">
+        <div class="history-title">历史记录</div>
+        <div class="session-list" id="sessionList"></div>
+    </div>
+
+    <script>
+        let sessions = JSON.parse(localStorage.getItem('banana_v4_sess') || '[]');
+        let currentId = null;
+        let uploadedImages = [];
+
+        window.onload = () => {
+            document.getElementById('apiKey').value = localStorage.getItem('banana_key') || '';
+            if(sessions.length === 0) createNewSession();
+            else switchSession(sessions[0].id);
+            setupDragAndDrop();
+        };
+
+        function saveConfig() { localStorage.setItem('banana_key', document.getElementById('apiKey').value); }
+
+        function createNewSession() {
+            const id = Date.now().toString();
+            sessions.unshift({ id, title: '未命名对话', msgs: [{role:'ai', content:'你好！我是 4K 专业版。你可以拖入参考图进行创作。'}] });
+            switchSession(id);
+        }
+
+        function switchSession(id) {
+            currentId = id;
+            renderList();
+            renderChat();
+        }
+
+        // --- 拖拽功能实现 (核心修复) ---
+        function setupDragAndDrop() {
+            const zone = document.body; // 全局监听提高稳定性
+            const overlay = document.getElementById('dragOverlay');
+
+            window.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                overlay.style.display = 'flex';
+            });
+
+            window.addEventListener('dragleave', (e) => {
+                if (e.pageX === 0 || e.pageY === 0) { // 真正离开窗口
+                    overlay.style.display = 'none';
+                }
+            });
+
+            window.addEventListener('drop', (e) => {
+                e.preventDefault();
+                overlay.style.display = 'none';
+                if (e.dataTransfer.files.length > 0) {
+                    handleFiles(e.dataTransfer.files);
+                }
+            });
+
+            // 粘贴支持
+            document.addEventListener('paste', (e) => {
+                const items = e.clipboardData.items;
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                        handleFiles([items[i].getAsFile()]);
+                    }
+                }
+            });
+        }
+
+        function handleFiles(files) {
+            Array.from(files).forEach(file => {
+                if (!file.type.startsWith('image/')) return;
+                const reader = new FileReader();
+                reader.onload = e => {
+                    uploadedImages.push(e.target.result);
+                    renderPreviews();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function renderPreviews() {
+            const container = document.getElementById('previewContainer');
+            container.innerHTML = uploadedImages.map((src, idx) => `
+                <div class="preview-box">
+                    <img src="${src}">
+                    <div class="remove-x" onclick="removeImg(${idx})">×</div>
+                </div>
+            `).join('');
+        }
+
+        function removeImg(idx) {
+            uploadedImages.splice(idx, 1);
+            renderPreviews();
+        }
+
+        // --- 业务逻辑 ---
+        function renderList() {
+            const list = document.getElementById('sessionList');
+            list.innerHTML = sessions.map(s => `
+                <div class="session-item ${s.id === currentId ? 'active' : ''}" onclick="switchSession('${s.id}')">
+                    <span style="overflow:hidden; text-overflow:ellipsis">${s.title}</span>
+                    <span class="del-btn" onclick="deleteSess(event, '${s.id}')">×</span>
+                </div>
+            `).join('');
+        }
+
+        function renderChat() {
+            const sess = sessions.find(s => s.id === currentId);
+            const container = document.getElementById('chatHistory');
+            container.innerHTML = sess.msgs.map(m => `
+                <div class="message ${m.role}">
+                    <div class="avatar">${m.role === 'user' ? '👤' : '🍌'}</div>
+                    <div class="bubble">
+                        ${m.content ? `<div>${m.content}</div>` : ''}
+                        ${m.imgs ? m.imgs.map(i => `<img src="${i}" onclick="window.open(this.src)">`).join('') : ''}
+                    </div>
+                </div>
+            `).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function deleteSess(e, id) {
+            e.stopPropagation();
+            sessions = sessions.filter(s => s.id !== id);
+            localStorage.setItem('banana_v4_sess', JSON.stringify(sessions));
+            if(sessions.length === 0) createNewSession();
+            else if(currentId === id) switchSession(sessions[0].id);
+            else renderList();
+        }
+
+        async function send() {
+            const input = document.getElementById('userInput');
+            const text = input.value.trim();
+            const key = document.getElementById('apiKey').value;
+            if(!key) return alert('请先输入 API Key');
+            if(!text && uploadedImages.length === 0) return;
+
+            const sess = sessions.find(s => s.id === currentId);
+            if(sess.title === '未命名对话' && text) sess.title = text.slice(0, 10);
+            
+            const userMsg = { role: 'user', content: text, imgs: [...uploadedImages] };
+            sess.msgs.push(userMsg);
+            renderChat();
+
+            input.value = '';
+            uploadedImages = [];
+            renderPreviews();
+
+            const aiId = 'ai-' + Date.now();
+            const aiMsg = { role: 'ai', content: '', id: aiId };
+            sess.msgs.push(aiMsg);
+            
+            const history = document.getElementById('chatHistory');
+            const aiDom = document.createElement('div');
+            aiDom.className = 'message ai';
+            aiDom.innerHTML = `<div class="avatar">🍌</div><div class="bubble" id="${aiId}">
+                <div class="progress-bar-container"><div class="progress-bar-fill" id="${aiId}-bar"></div></div>
+                <div style="font-size:12px; color:#555; margin-top:5px;">正在处理 4K 任务...</div>
+            </div>`;
+            history.appendChild(aiDom);
+            history.scrollTop = history.scrollHeight;
+
+            try {
+                const res = await fetch(`https://grsai.dakka.com.cn/v1/draw/nano-banana`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+                    body: JSON.stringify({
+                        model: document.getElementById('modelName').value,
+                        prompt: text,
+                        urls: userMsg.imgs,
+                        aspectRatio: document.getElementById('aspectRatio').value,
+                        imageSize: document.getElementById('imageSize').value,
+                        shutProgress: false
+                    })
+                });
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                while(true) {
+                    const {done, value} = await reader.read();
+                    if(done) break;
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n').filter(l => l.trim().startsWith('data:'));
+                    for(let line of lines) {
+                        const data = JSON.parse(line.replace('data:', ''));
+                        const bar = document.getElementById(`${aiId}-bar`);
+                        if(bar) bar.style.width = data.progress + '%';
+                        if(data.status === 'succeeded') {
+                            aiMsg.content = data.results[0].content;
+                            aiMsg.imgs = [data.results[0].url];
+                            renderChat();
+                            localStorage.setItem('banana_v4_sess', JSON.stringify(sessions));
+                        }
+                    }
+                }
+            } catch(e) {
+                document.getElementById(aiId).innerHTML = `<span style="color:#ef4444">错误: ${e.message}</span>`;
+            }
+        }
+    </script>
+</body>
+</html>
