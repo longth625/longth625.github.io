@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电商产品背景替换 Pro - 智能提示词生成器</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text: #111827;
+            --border: #e5e7eb;
+            --chip-bg: #f9fafb;
+            --chip-active: #eef2ff;
+            --chip-active-border: #4f46e5;
+            --chip-active-text: #4f46e5;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+        h1 { font-size: 1.5rem; margin-bottom: 20px; color: var(--text); display: flex; align-items: center; gap: 10px; font-weight: 800; }
+        .badge { background: var(--primary); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; vertical-align: middle; }
+        
+        .container { display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 25px; }
+        @media (max-width: 850px) { .container { grid-template-columns: 1fr; } }
+        
+        .card {
+            background: var(--card);
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        .section-title { font-weight: 700; font-size: 1rem; color: #374151; }
+        .section-desc { font-size: 0.85rem; color: #9ca3af; font-weight: normal; }
+
+        label { display: block; margin: 15px 0 6px; font-size: 0.9rem; font-weight: 600; color: #4b5563; }
+        select, input[type="text"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border 0.2s;
+            background: #fff;
+        }
+        select:focus, input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+        
+        .chips-group { margin-bottom: 20px; }
+        .chips-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+        
+        .chip {
+            padding: 8px 12px;
+            background: var(--chip-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+        }
+        .chip:hover { border-color: #cbd5e1; background: #f1f5f9; }
+        .chip.active {
+            background: var(--chip-active);
+            color: var(--chip-active-text);
+            border-color: var(--chip-active-border);
+            font-weight: 600;
+            box-shadow: 0 1px 2px rgba(79, 70, 229, 0.1);
+        }
+        .chip.active::after {
+            content: "✓";
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .custom-row { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+        .custom-input { flex: 1; margin-bottom: 0 !important; font-size: 13px !important; }
+        .custom-btn {
+            white-space: nowrap;
+            padding: 8px 12px;
+            background: #f3f4f6;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .custom-btn:hover { background: #e5e7eb; }
+
+        textarea {
+            width: 100%;
+            height: 500px;
+            padding: 16px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: #f8fafc;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            resize: vertical;
+            line-height: 1.6;
+            color: #334155;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+            font-size: 1rem;
+            transition: background 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+        }
+        .btn-primary:hover { background: var(--primary-hover); }
+
+        .sticky-card { position: sticky; top: 20px; }
+        
+        /* 多选提示 */
+        .multi-badge {
+            font-size: 10px;
+            background: #e0e7ff;
+            color: #4338ca;
+            padding: 1px 4px;
+            border-radius: 3px;
+            margin-left: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>
+        电商图 AI 重绘 Pro <span class="badge">v2.1</span>
+    </h1>
+
+    <div class="container">
+        <div class="card">
+            <div class="section-header">
+                <span class="section-title">1. 产品与风格定义</span>
+                <span class="section-desc">选择大类，自动匹配材质库</span>
+            </div>
+            
+            <div style="display: flex; gap: 15px;">
+                <div style="flex: 1;">
+                    <label>产品名称 (主体)</label>
+                    <input type="text" id="productName" value="锌合金拉手" placeholder="例如：门把手、化妆水">
+                </div>
+                <div style="flex: 1;">
+                    <label>整体风格</label>
+                    <select id="styleSelect" onchange="updateOptions()">
+                        <optgroup label="✨ 热门商业类">
+                            <option value="luxury_black">黑金轻奢 (Black & Gold)</option>
+                            <option value="minimalist_nordic">极简北欧 (Nordic)</option>
+                            <option value="clean_studio">纯净商拍 (Clean Studio)</option>
+                        </optgroup>
+                        <optgroup label="🌿 材质质感类">
+                            <option value="oriental_zen">东方禅意 (New Chinese)</option>
+                            <option value="organic_nature">自然森系 (Organic)</option>
+                            <option value="industrial_raw">硬核工业 (Industrial)</option>
+                        </optgroup>
+                        <optgroup label="🎨 艺术氛围类">
+                            <option value="morandi_art">柔和莫兰迪 (Morandi)</option>
+                            <option value="tech_future">前卫科技 (Futuristic)</option>
+                        </optgroup>
+                    </select>
+                </div>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid var(--border); margin: 25px 0;">
+
+            <div class="section-header">
+                <span class="section-title">2. 场景细节定制</span>
+                <span class="section-desc">点选材质，氛围支持多选</span>
+            </div>
+
+            <div class="chips-group">
+                <label>🛠️ 桌面背景 (Ground)</label>
+                <div class="chips-container" id="bgOptions"></div>
+                <div class="custom-row">
+                    <input type="text" class="custom-input" id="customBg" placeholder="自定义背景材质...">
+                    <button class="custom-btn" onclick="applyCustom('bg')">应用</button>
+                </div>
+            </div>
+
+            <div class="chips-group">
+                <label>📦 底座/支撑物 (Base)</label>
+                <div class="chips-container" id="baseOptions"></div>
+                <div class="custom-row">
+                    <input type="text" class="custom-input" id="customBase" placeholder="自定义底座物体...">
+                    <button class="custom-btn" onclick="applyCustom('base')">应用</button>
+                </div>
+            </div>
+
+            <div class="chips-group">
+                <label>🌸 氛围装饰 (Decor) <span class="multi-badge">支持多选</span></label>
+                <div class="chips-container" id="decorOptions"></div>
+                <div class="custom-row">
+                    <input type="text" class="custom-input" id="customDecor" placeholder="输入自定义装饰并点应用可追加...">
+                    <button class="custom-btn" onclick="applyCustom('decor')">应用</button>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="card sticky-card">
+            <div class="section-header">
+                <span class="section-title">3. 最终提示词</span>
+                <span class="section-desc">已包含防变形指令</span>
+            </div>
+            <textarea id="outputArea" readonly></textarea>
+            <button class="btn-primary" onclick="copyPrompt()">复制提示词</button>
+            <div id="copyStatus" style="text-align: center; margin-top: 10px; font-size: 13px; color: #10b981; min-height: 20px;"></div>
+            
+            <div style="background: #eff6ff; padding: 12px; border-radius: 8px; margin-top: 15px; font-size: 12px; color: #1e40af; border: 1px solid #dbeafe;">
+                <strong>💡 使用技巧：</strong><br>
+                1. 氛围装饰可以点击多个来丰富画面。<br>
+                2. 若要取消选中，再次点击已选中的标签即可。<br>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const styleData = {
+            luxury_black: {
+                bg: ['黑金沙大理石台面', '深色胡桃木纹理', '黑色哑光岩板', '深灰丝绒布面', '高光黑檀木', '黑色皮革纹理'],
+                base: ['上方未打磨的黑色原石', '拉丝黄铜金属块', '黑色几何体石膏', '深色烟熏玻璃砖', '黑曜石方块', '深红木底座'],
+                decor: ['金色的光斑', '模糊的高脚杯轮廓', '奢华的金色线条', '聚光灯效果', '高级干花', '暗调背景光'],
+                desc: '高端、神秘、质感强烈，强调金属与深色的对比'
+            },
+            minimalist_nordic: {
+                bg: ['白色哑光饰面', '浅色白橡木桌面', '浅灰微水泥台面', '纯白岩板', '米色亚麻桌布', '水磨石纹理'],
+                base: ['白色石膏几何体', '浅木色积木块', '磨砂亚克力方块', '素烧陶瓷砖', '白色大理石块', '圆形木桩切片'],
+                decor: ['柔和的窗影', '极简线条植物', '尤加利叶', '纯净的自然漫射光', '散落的杂志一角', '纯白背景墙'],
+                desc: '干净、明亮、低饱和度，适合展现产品原色'
+            },
+            clean_studio: {
+                bg: ['纯白无缝背景纸', '浅灰色渐变背景', '米色纯色台面', '反光倒影板', '哑光PVC背景板', '极简纯色台面'],
+                base: ['同色系喷漆立方体', '纯白展台底座', '透明亚克力展示架', '镜面金属方块', '几何圆柱体', '悬浮展示台'],
+                decor: ['硬朗的摄影室灯光', '强烈的几何阴影', '边缘光(Rim Light)', '无装饰极简风格', '对角线构图', '植物投影'],
+                desc: '无干扰、专业摄影棚质感，强调光影立体感'
+            },
+            oriental_zen: {
+                bg: ['老榆木纹理桌面', '粗糙的宣纸肌理', '青石板台面', '深色竹编席面', '陶土质感台面', '水墨晕染背景'],
+                base: ['粗陶烧制方砖', '天然太湖石', '做旧的木质底座', '古籍书本堆叠', '未经雕琢的砚台石', '紫砂质感底座'],
+                decor: ['一枝枯梅', '袅袅香烟', '茶具残影', '中式窗格投影', '苔藓点缀', '柔和暖黄光'],
+                desc: '静谧、古朴、富有文化底蕴'
+            },
+            organic_nature: {
+                bg: ['带有树皮的原木', '铺满苔藓的石板', '沙色岩石表面', '森林地表纹理', '粗亚麻布', '风化木板'],
+                base: ['天然河石', '原木树桩', '粗糙的砂岩块', '陶土红砖', '带皮木块', '不规则石块'],
+                decor: ['透过树叶的斑驳阳光', '清晨露珠', '鲜活的绿植叶片', '散落的小石子', '自然生长的野花', '森林背景虚化'],
+                desc: '有机、生命力、户外感，适合强调环保材质'
+            },
+            industrial_raw: {
+                bg: ['清水混凝土台面', '生锈的铁板', '拉丝不锈钢台面', '深灰色水泥自流平', '做旧木板', '沥青质感表面'],
+                base: ['红砖块', '混凝土浇筑方块', '金属网格底座', '工字钢截面', '生锈齿轮', '灰色煤渣砖'],
+                decor: ['冷色调灯光', '电线阴影', '蓝图纸张', '金属碎屑', '霓虹灯管映照', '硬朗的光影线条'],
+                desc: '粗犷、冷峻、力量感，适合金属制品'
+            },
+            morandi_art: {
+                bg: ['雾霾蓝哑光漆面', '脏粉色肌理纸', '豆沙绿台面', '奶咖色微水泥', '灰调彩色石膏', '柔光绒布'],
+                base: ['莫兰迪色几何体', '拱形石膏门洞', '彩色陶土块', '波浪形展示台', '球形底座', '阶梯状展示架'],
+                decor: ['艺术雕塑一角', '干花芦苇', '柔和的漫反射光', '极简抽象画背景', '丝绸褶皱', '曲线阴影'],
+                desc: '高级灰调、柔和、艺术馆氛围'
+            },
+            tech_future: {
+                bg: ['黑色镜面玻璃', '发光网格地面', '拉丝铝合金板', '碳纤维纹理', '全息幻彩表面', '深蓝科技背景'],
+                base: ['发光亚克力方块', '磁悬浮底座', '透明玻璃砖', '金属电路板底座', '液态金属形态', '霓虹灯带底座'],
+                decor: ['激光线条', '蓝紫色霓虹光', '数字故障风(Glitch)背景', '悬浮粒子', '冷白轮廓光', '赛博朋克氛围'],
+                desc: '酷炫、未来感、电子风'
+            }
+        };
+
+        const coreConstraints = `核心生成指令 (Constraint Protocol)：
+1. 【绝对保护】主体保护：原图中的“{product}”为画面绝对核心，必须完全保留其所有细节（金属拉丝纹理、螺丝孔位、光泽度、边缘锐度），严禁重绘、变形或风格化处理。
+2. 【严格对齐】几何一致性：严格锁定“{product}”的透视角度、尺寸比例和画面位置，生成的底座必须准确承托产品，不能出现产品悬空或穿模现象。
+3. 【画质要求】输出分辨率不低于 4000x4000，画面必须锐利清晰，无噪点。
+4. 【材质逻辑】背景替换后，需根据新环境自动计算产品表面的环境反射（Reflections），但不能改变产品原本的固有色和材质属性。`;
+
+        // 修改状态：decor 变为数组
+        let currentSelections = { bg: '', base: '', decor: [] };
+
+        function init() {
+            updateOptions();
+        }
+
+        function updateOptions() {
+            const styleKey = document.getElementById('styleSelect').value;
+            const data = styleData[styleKey];
+            
+            // 默认选中第一个
+            currentSelections.bg = data.bg[0];
+            currentSelections.base = data.base[0];
+            currentSelections.decor = [data.decor[0]]; // 默认选中风格里的第一个装饰
+            
+            renderChips('bgOptions', data.bg, 'bg');
+            renderChips('baseOptions', data.base, 'base');
+            renderChips('decorOptions', data.decor, 'decor');
+
+            generatePrompt();
+        }
+
+        function renderChips(containerId, options, type) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = ''; 
+            
+            options.forEach(opt => {
+                const chip = document.createElement('div');
+                // 判断逻辑更新：如果是数组则判断是否包含，否则判断是否相等
+                const isActive = Array.isArray(currentSelections[type]) 
+                    ? currentSelections[type].includes(opt) 
+                    : currentSelections[type] === opt;
+                
+                chip.className = `chip ${isActive ? 'active' : ''}`;
+                chip.innerText = opt;
+                chip.onclick = () => {
+                    handleSelection(container, chip, type, opt);
+                };
+                container.appendChild(chip);
+            });
+        }
+
+        function handleSelection(container, clickedChip, type, value) {
+            if (type === 'decor') {
+                // 多选逻辑：切换 Toggle
+                if (currentSelections.decor.includes(value)) {
+                    currentSelections.decor = currentSelections.decor.filter(item => item !== value);
+                    clickedChip.classList.remove('active');
+                } else {
+                    currentSelections.decor.push(value);
+                    clickedChip.classList.add('active');
+                }
+            } else {
+                // 单选逻辑
+                Array.from(container.children).forEach(c => c.classList.remove('active'));
+                clickedChip.classList.add('active');
+                currentSelections[type] = value;
+            }
+            generatePrompt();
+        }
+
+        function applyCustom(type) {
+            const inputId = type === 'bg' ? 'customBg' : (type === 'base' ? 'customBase' : 'customDecor');
+            const val = document.getElementById(inputId).value.trim();
+            const containerId = type === 'bg' ? 'bgOptions' : (type === 'base' ? 'baseOptions' : 'decorOptions');
+            
+            if (val) {
+                if (type === 'decor') {
+                    // 如果是装饰，则追加
+                    if (!currentSelections.decor.includes(val)) {
+                        currentSelections.decor.push(val);
+                        // 动态增加一个活跃的 chip 方便反馈
+                        const container = document.getElementById(containerId);
+                        const chip = document.createElement('div');
+                        chip.className = 'chip active';
+                        chip.innerText = val;
+                        chip.onclick = () => handleSelection(container, chip, 'decor', val);
+                        container.appendChild(chip);
+                    }
+                } else {
+                    // 背景和底座仍维持单选，取消之前的选中
+                    const container = document.getElementById(containerId);
+                    Array.from(container.children).forEach(c => c.classList.remove('active'));
+                    currentSelections[type] = val;
+                }
+                document.getElementById(inputId).value = ''; // 清空输入框
+                generatePrompt();
+            }
+        }
+
+        function generatePrompt() {
+            const product = document.getElementById('productName').value || '产品';
+            const styleKey = document.getElementById('styleSelect').value;
+            const styleDesc = styleData[styleKey].desc;
+            
+            const { bg, base, decor } = currentSelections;
+            // 处理装饰列表显示
+            const decorText = decor.length > 0 ? decor.join('、') : '无额外装饰';
+
+            let prompt = `## 任务描述\n`;
+            prompt += `将一张白色背景的${product}摆拍图进行背景替换，生成一张电商级的高质量产品展示图。\n\n`;
+            
+            prompt += coreConstraints.replace(/{product}/g, product) + '\n\n';
+
+            prompt += `## 画面描述 (Prompt)\n`;
+            prompt += `**1. 画面风格**：${styleDesc}。\n`;
+            prompt += `**2. 主体对象**：${product}（保持原图姿态与细节）。\n`;
+            prompt += `**3. 背景环境**：${bg}，材质纹理清晰，具有真实的空间感和景深。\n`;
+            prompt += `**4. 底座替换**：将原图中的白色木块替换为“${base}”，用于支撑${product}。要求底座与桌面的接触面阴影真实。\n`;
+            prompt += `**5. 氛围装饰**：周围点缀“${decorText}”，利用光影营造高级感，光线方向与产品原有高光保持一致。\n\n`;
+            
+            prompt += `## 负向提示词 (Negative Prompt)\n`;
+            prompt += `模糊, 噪点, 产品变形, 错误的透视, 悬空, 廉价感, 卡通风格, 绘画风格, 复杂杂乱的背景`;
+
+            document.getElementById('outputArea').value = prompt;
+        }
+
+        function copyPrompt() {
+            const copyText = document.getElementById("outputArea");
+            copyText.select();
+            navigator.clipboard.writeText(copyText.value).then(() => {
+                const status = document.getElementById("copyStatus");
+                status.innerText = "✅ 复制成功！";
+                setTimeout(() => status.innerText = "", 3000);
+            });
+        }
+
+        document.getElementById('productName').addEventListener('input', generatePrompt);
+        
+        ['customBg', 'customBase', 'customDecor'].forEach(id => {
+            document.getElementById(id).addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    const type = id === 'customBg' ? 'bg' : (id === 'customBase' ? 'base' : 'decor');
+                    applyCustom(type);
+                }
+            });
+        });
+
+        init();
+    </script>
+</body>
+</html>
