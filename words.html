@@ -142,7 +142,6 @@
 
         .sticky-card { position: sticky; top: 20px; }
         
-        /* 多选提示 */
         .multi-badge {
             font-size: 10px;
             background: #e0e7ff;
@@ -156,7 +155,7 @@
 <body>
 
     <h1>
-        电商图 AI 重绘 Pro <span class="badge">v2.1</span>
+        电商图 AI 重绘 Pro <span class="badge">v2.2</span>
     </h1>
 
     <div class="container">
@@ -180,9 +179,13 @@
                             <option value="clean_studio">纯净商拍 (Clean Studio)</option>
                         </optgroup>
                         <optgroup label="🌿 材质质感类">
-                            <option value="oriental_zen">东方禅意 (New Chinese)</option>
+                            <option value="oriental_zen">东方禅意 (Zen Art)</option>
                             <option value="organic_nature">自然森系 (Organic)</option>
                             <option value="industrial_raw">硬核工业 (Industrial)</option>
+                        </optgroup>
+                        <optgroup label="🏰 经典文化类">
+                            <option value="european_classic">欧式典雅 (European)</option>
+                            <option value="modern_chinese">新中式 (Modern Chinese)</option>
                         </optgroup>
                         <optgroup label="🎨 艺术氛围类">
                             <option value="morandi_art">柔和莫兰迪 (Morandi)</option>
@@ -231,17 +234,11 @@
         <div class="card sticky-card">
             <div class="section-header">
                 <span class="section-title">3. 最终提示词</span>
-                <span class="section-desc">已包含防变形指令</span>
+                <span class="section-desc">已包含针对性负向优化</span>
             </div>
             <textarea id="outputArea" readonly></textarea>
             <button class="btn-primary" onclick="copyPrompt()">复制提示词</button>
             <div id="copyStatus" style="text-align: center; margin-top: 10px; font-size: 13px; color: #10b981; min-height: 20px;"></div>
-            
-            <div style="background: #eff6ff; padding: 12px; border-radius: 8px; margin-top: 15px; font-size: 12px; color: #1e40af; border: 1px solid #dbeafe;">
-                <strong>💡 使用技巧：</strong><br>
-                1. 氛围装饰可以点击多个来丰富画面。<br>
-                2. 若要取消选中，再次点击已选中的标签即可。<br>
-            </div>
         </div>
     </div>
 
@@ -271,6 +268,18 @@
                 decor: ['一枝枯梅', '袅袅香烟', '茶具残影', '中式窗格投影', '苔藓点缀', '柔和暖黄光'],
                 desc: '静谧、古朴、富有文化底蕴'
             },
+            european_classic: {
+                bg: ['大理石拼花地面', '欧式浮雕墙面', '古典胡桃木桌面', '米白色石膏饰面', '深色丝绒桌布', '象牙白大理石台面'],
+                base: ['古希腊石膏柱头', '金边雕花托盘', '白色大理石方块', '古典精装书籍', '丝绒首饰衬垫', '复古铜制底座'],
+                decor: ['欧式烛台轮廓', '红色玫瑰花瓣', '古典油画背景', '暖黄色柔和光', '丝绸褶皱垂感', '水晶灯斑驳光影'],
+                desc: '奢华、古典、庄重，富有浓郁的欧式宫廷质感'
+            },
+            modern_chinese: {
+                bg: ['黑胡桃木中式桌面', '灰色大理石岩板', '宣纸肌理背板', '深色哑光石材', '竹编纹理背景', '深灰色水泥漆面'],
+                base: ['中式木纹方台', '现代禅意景观石', '黑檀木底座', '中式博古架一角', '白瓷展示底座', '微型山水摆件'],
+                decor: ['中式镂空窗格投影', '迎客松盆景枝叶', '线香缭绕的轻烟', '写意水墨背景', '银杏叶点缀', '暖调局部聚光'],
+                desc: '融合传统与现代，展现宁静、内敛的东方韵味'
+            },
             organic_nature: {
                 bg: ['带有树皮的原木', '铺满苔藓的石板', '沙色岩石表面', '森林地表纹理', '粗亚麻布', '风化木板'],
                 base: ['天然河石', '原木树桩', '粗糙的砂岩块', '陶土红砖', '带皮木块', '不规则石块'],
@@ -299,11 +308,10 @@
 
         const coreConstraints = `核心生成指令 (Constraint Protocol)：
 1. 【绝对保护】主体保护：原图中的“{product}”为画面绝对核心，必须完全保留其所有细节（金属拉丝纹理、螺丝孔位、光泽度、边缘锐度），严禁重绘、变形或风格化处理。
-2. 【严格对齐】几何一致性：严格锁定“{product}”的透视角度、尺寸比例和画面位置，生成的底座必须准确承托产品，不能出现产品悬空或穿模现象。
-3. 【画质要求】输出分辨率不低于 4000x4000，画面必须锐利清晰，无噪点。
-4. 【材质逻辑】背景替换后，需根据新环境自动计算产品表面的环境反射（Reflections），但不能改变产品原本的固有色和材质属性。`;
+2. 【严格对齐】几何一致性：严格锁定“{product}”的透视角度、尺寸比例和画面位置，生成的底座必须准确承托产品。
+3. 【画质要求】输出分辨率不低于 4000x4000，画面清晰锐利。
+4. 【材质逻辑】根据新环境自动计算产品表面的环境反射(Reflections)，但不改变产品原本的固有色。`;
 
-        // 修改状态：decor 变为数组
         let currentSelections = { bg: '', base: '', decor: [] };
 
         function init() {
@@ -313,42 +321,32 @@
         function updateOptions() {
             const styleKey = document.getElementById('styleSelect').value;
             const data = styleData[styleKey];
-            
-            // 默认选中第一个
             currentSelections.bg = data.bg[0];
             currentSelections.base = data.base[0];
-            currentSelections.decor = [data.decor[0]]; // 默认选中风格里的第一个装饰
-            
+            currentSelections.decor = [data.decor[0]];
             renderChips('bgOptions', data.bg, 'bg');
             renderChips('baseOptions', data.base, 'base');
             renderChips('decorOptions', data.decor, 'decor');
-
             generatePrompt();
         }
 
         function renderChips(containerId, options, type) {
             const container = document.getElementById(containerId);
             container.innerHTML = ''; 
-            
             options.forEach(opt => {
                 const chip = document.createElement('div');
-                // 判断逻辑更新：如果是数组则判断是否包含，否则判断是否相等
                 const isActive = Array.isArray(currentSelections[type]) 
                     ? currentSelections[type].includes(opt) 
                     : currentSelections[type] === opt;
-                
                 chip.className = `chip ${isActive ? 'active' : ''}`;
                 chip.innerText = opt;
-                chip.onclick = () => {
-                    handleSelection(container, chip, type, opt);
-                };
+                chip.onclick = () => handleSelection(container, chip, type, opt);
                 container.appendChild(chip);
             });
         }
 
         function handleSelection(container, clickedChip, type, value) {
             if (type === 'decor') {
-                // 多选逻辑：切换 Toggle
                 if (currentSelections.decor.includes(value)) {
                     currentSelections.decor = currentSelections.decor.filter(item => item !== value);
                     clickedChip.classList.remove('active');
@@ -357,7 +355,6 @@
                     clickedChip.classList.add('active');
                 }
             } else {
-                // 单选逻辑
                 Array.from(container.children).forEach(c => c.classList.remove('active'));
                 clickedChip.classList.add('active');
                 currentSelections[type] = value;
@@ -369,13 +366,10 @@
             const inputId = type === 'bg' ? 'customBg' : (type === 'base' ? 'customBase' : 'customDecor');
             const val = document.getElementById(inputId).value.trim();
             const containerId = type === 'bg' ? 'bgOptions' : (type === 'base' ? 'baseOptions' : 'decorOptions');
-            
             if (val) {
                 if (type === 'decor') {
-                    // 如果是装饰，则追加
                     if (!currentSelections.decor.includes(val)) {
                         currentSelections.decor.push(val);
-                        // 动态增加一个活跃的 chip 方便反馈
                         const container = document.getElementById(containerId);
                         const chip = document.createElement('div');
                         chip.className = 'chip active';
@@ -384,12 +378,11 @@
                         container.appendChild(chip);
                     }
                 } else {
-                    // 背景和底座仍维持单选，取消之前的选中
                     const container = document.getElementById(containerId);
                     Array.from(container.children).forEach(c => c.classList.remove('active'));
                     currentSelections[type] = val;
                 }
-                document.getElementById(inputId).value = ''; // 清空输入框
+                document.getElementById(inputId).value = '';
                 generatePrompt();
             }
         }
@@ -398,25 +391,27 @@
             const product = document.getElementById('productName').value || '产品';
             const styleKey = document.getElementById('styleSelect').value;
             const styleDesc = styleData[styleKey].desc;
-            
             const { bg, base, decor } = currentSelections;
-            // 处理装饰列表显示
             const decorText = decor.length > 0 ? decor.join('、') : '无额外装饰';
 
-            let prompt = `## 任务描述\n`;
-            prompt += `将一张白色背景的${product}摆拍图进行背景替换，生成一张电商级的高质量产品展示图。\n\n`;
-            
+            let prompt = `## 任务描述\n将一张白色背景的${product}摆拍图进行背景替换，生成一张电商级的高质量产品展示图。\n\n`;
             prompt += coreConstraints.replace(/{product}/g, product) + '\n\n';
-
             prompt += `## 画面描述 (Prompt)\n`;
             prompt += `**1. 画面风格**：${styleDesc}。\n`;
             prompt += `**2. 主体对象**：${product}（保持原图姿态与细节）。\n`;
             prompt += `**3. 背景环境**：${bg}，材质纹理清晰，具有真实的空间感和景深。\n`;
-            prompt += `**4. 底座替换**：将原图中的白色木块替换为“${base}”，用于支撑${product}。要求底座与桌面的接触面阴影真实。\n`;
-            prompt += `**5. 氛围装饰**：周围点缀“${decorText}”，利用光影营造高级感，光线方向与产品原有高光保持一致。\n\n`;
+            prompt += `**4. 底座替换**：将原图中的支撑物替换为“${base}”，用于支撑${product}。要求底座与桌面的接触面阴影真实。\n`;
+            prompt += `**5. 氛围装饰**：周围点缀“${decorText}”，利用光影营造高级感。\n\n`;
             
+            // 优化后的负向提示词
             prompt += `## 负向提示词 (Negative Prompt)\n`;
-            prompt += `模糊, 噪点, 产品变形, 错误的透视, 悬空, 廉价感, 卡通风格, 绘画风格, 复杂杂乱的背景`;
+            prompt += `(低质量, 噪点, 模糊, 颗粒感), (产品变形, 结构错误, 细节丢失, 边缘锯齿), (错误的透视, 悬空, 穿模), (廉价材质, 塑料感), (文字, 水印, Logo), (过时设计, 90年代审美, 杂乱背景), (过度曝光, 阴影生硬), (不真实的反射, 错误的物理逻辑)`;
+            
+            if (styleKey === 'european_classic') {
+                prompt += `, (土豪金, 廉价塑料花, 刺眼的亮黄色, 杂乱的纹饰, 昏暗的光线)`;
+            } else if (styleKey === 'modern_chinese' || styleKey === 'oriental_zen') {
+                prompt += `, (老旧红木色, 庸俗的花纹, 假盆景, 刻意堆砌, 廉价香炉)`;
+            }
 
             document.getElementById('outputArea').value = prompt;
         }
@@ -432,16 +427,6 @@
         }
 
         document.getElementById('productName').addEventListener('input', generatePrompt);
-        
-        ['customBg', 'customBase', 'customDecor'].forEach(id => {
-            document.getElementById(id).addEventListener('keypress', function (e) {
-                if (e.key === 'Enter') {
-                    const type = id === 'customBg' ? 'bg' : (id === 'customBase' ? 'base' : 'decor');
-                    applyCustom(type);
-                }
-            });
-        });
-
         init();
     </script>
 </body>
