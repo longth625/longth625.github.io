@@ -42,19 +42,19 @@
 
         /* Top Header & Intensity Control */
         header {
-            padding: 12px 0;
-            margin-bottom: 12px;
+            padding: 8px 0 12px;
         }
 
+        /* Line 1: Title + Intensity Switcher */
         .header-top {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
 
         h1 {
-            font-size: 1.3rem;
+            font-size: 1.25rem;
             color: var(--accent-blue);
             font-weight: 700;
         }
@@ -88,6 +88,33 @@
         .intensity-btn.pro-active {
             background: var(--accent-rose);
             color: #ffffff;
+        }
+
+        /* Line 2: Quick Start Button */
+        .quick-start-row {
+            margin-bottom: 12px;
+        }
+
+        .btn-quick-start {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-green));
+            color: #0f172a;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 14px rgba(56, 189, 248, 0.25);
+            transition: transform 0.1s active;
+        }
+
+        .btn-quick-start:active {
+            transform: scale(0.98);
         }
 
         /* Overall Progress Card */
@@ -332,6 +359,12 @@
             border-color: rgba(245, 158, 11, 0.2);
         }
 
+        .timer-modal.prep .timer-status-tag {
+            color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
         .timer-exercise-name {
             font-size: 1.25rem;
             font-weight: 700;
@@ -376,6 +409,10 @@
 
         .timer-modal.resting .circle-progress {
             stroke: var(--accent-amber);
+        }
+
+        .timer-modal.prep .circle-progress {
+            stroke: var(--accent-green);
         }
 
         .circle-timer-text {
@@ -479,13 +516,20 @@
 <body>
 
     <header>
+        <!-- Line 1: Header Title & Intensity Selector -->
         <div class="header-top">
             <h1>床上减脂塑形</h1>
-            <!-- Intensity Level Switcher -->
             <div class="intensity-toggle">
                 <button class="intensity-btn active" id="btn-mode-std" onclick="setIntensityMode('STD')">标准 30分</button>
                 <button class="intensity-btn" id="btn-mode-pro" onclick="setIntensityMode('PRO')">进阶 40分 🔥</button>
             </div>
+        </div>
+
+        <!-- Line 2: Quick Start Button -->
+        <div class="quick-start-row">
+            <button class="btn-quick-start" onclick="triggerQuickStart()">
+                <span>▶️ 开始全套运动</span>
+            </button>
         </div>
     </header>
 
@@ -832,7 +876,7 @@
         let currentPhaseIdx = 0;
         let currentExIdx = 0;
         let currentSet = 1;
-        let timerState = 'IDLE'; // IDLE, WORK, REST, PAUSED
+        let timerState = 'IDLE'; // IDLE, PREP, WORK, REST, PAUSED
         let previousState = 'WORK';
         let timeRemaining = 0;
         let totalStateDuration = 0;
@@ -913,7 +957,7 @@
                 const gain = audioCtx.createGain();
                 osc.type = type;
                 osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
@@ -922,6 +966,52 @@
             } catch(e) {
                 console.log("Audio not active");
             }
+        }
+
+        // Distinct Sound Chime when Exercise Action Starts
+        function playExerciseStartChime() {
+            playSound(600, 'triangle', 0.15);
+            setTimeout(() => {
+                playSound(900, 'triangle', 0.3);
+            }, 150);
+        }
+
+        // Feature 1: Trigger Quick Start with 5s Preparation
+        function triggerQuickStart() {
+            currentPhaseIdx = 0;
+            currentExIdx = 0;
+            currentSet = 1;
+            openTimerModal();
+            startPrepState();
+        }
+
+        function startPrepState() {
+            timerState = 'PREP';
+            const modal = document.getElementById('timer-modal');
+            modal.classList.remove('resting');
+            modal.classList.add('prep');
+
+            const phase = workoutData[0];
+            const ex = phase.exercises[0];
+
+            document.getElementById('modal-phase-tag').innerText = phase.phaseTitle;
+            document.getElementById('timer-status-title').innerText = "⏳ 准备开始";
+            document.getElementById('timer-ex-name').innerText = ex.name;
+            document.getElementById('timer-set-info').innerText = `请躺平做好准备！`;
+
+            document.getElementById('timer-svg-container').innerHTML = ex.svg;
+            document.getElementById('timer-guide-desc').innerText = ex.desc;
+            document.getElementById('timer-guide-tips').innerText = "💡 关键： " + ex.tips;
+
+            timeRemaining = 5;
+            totalStateDuration = 5;
+
+            document.getElementById('next-preview-box').innerHTML = `首个动作：<strong>${ex.name} (第 1/${ex.totalSets}组)</strong>`;
+            updateTimerDisplay();
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(tick, 1000);
+            playSound(520, 'sine', 0.2); // First beep
         }
 
         // Timer Logic
@@ -952,6 +1042,7 @@
             timerState = 'WORK';
             const modal = document.getElementById('timer-modal');
             modal.classList.remove('resting');
+            modal.classList.remove('prep');
 
             const phase = workoutData[currentPhaseIdx];
             const ex = phase.exercises[currentExIdx];
@@ -974,12 +1065,15 @@
 
             clearInterval(timerInterval);
             timerInterval = setInterval(tick, 1000);
-            playSound(600, 'triangle', 0.3);
+
+            // Feature 2: Distinct Start Sound Audio Prompt
+            playExerciseStartChime();
         }
 
         function startRestState() {
             timerState = 'REST';
             const modal = document.getElementById('timer-modal');
+            modal.classList.remove('prep');
             modal.classList.add('resting');
 
             const phase = workoutData[currentPhaseIdx];
@@ -1034,6 +1128,16 @@
 
             timeRemaining--;
             updateTimerDisplay();
+
+            if (timerState === 'PREP') {
+                if (timeRemaining > 0) {
+                    playSound(520, 'sine', 0.15);
+                } else {
+                    clearInterval(timerInterval);
+                    startWorkState();
+                }
+                return;
+            }
 
             if (timeRemaining <= 3 && timeRemaining > 0) {
                 playSound(500, 'sine', 0.15);
@@ -1111,7 +1215,11 @@
 
         function skipCurrentState() {
             clearInterval(timerInterval);
-            handleStateCompletion();
+            if (timerState === 'PREP') {
+                startWorkState();
+            } else {
+                handleStateCompletion();
+            }
         }
 
         function updateOverallProgress() {
