@@ -1,0 +1,1141 @@
+html_content = """<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>床上减脂塑形助手</title>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-card: #1e293b;
+            --bg-card-active: #334155;
+            --accent-blue: #38bdf8;
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            padding: 12px;
+            max-width: 600px;
+            margin: 0 auto;
+            padding-bottom: 40px;
+        }
+
+        body.modal-open {
+            overflow: hidden;
+        }
+
+        /* Top Header & Intensity Control */
+        header {
+            padding: 12px 0;
+            margin-bottom: 12px;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            font-size: 1.3rem;
+            color: var(--accent-blue);
+            font-weight: 700;
+        }
+
+        /* Intensity Switcher Pill */
+        .intensity-toggle {
+            display: flex;
+            background: #1e293b;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 3px;
+        }
+
+        .intensity-btn {
+            padding: 5px 12px;
+            border-radius: 16px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .intensity-btn.active {
+            background: var(--accent-blue);
+            color: #0f172a;
+        }
+
+        .intensity-btn.pro-active {
+            background: var(--accent-rose);
+            color: #ffffff;
+        }
+
+        /* Overall Progress Card */
+        .progress-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 12px 14px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 16px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+        }
+
+        .progress-bar-bg {
+            height: 8px;
+            background: #0f172a;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+            transition: width 0.3s ease;
+        }
+
+        /* Phase Accordion */
+        .phase-module {
+            background: var(--bg-card);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .phase-header {
+            padding: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        .phase-header.p1 { border-left-color: #38bdf8; }
+        .phase-header.p2 { border-left-color: #f59e0b; }
+        .phase-header.p3 { border-left-color: #ec4899; }
+        .phase-header.p4 { border-left-color: #10b981; }
+
+        .phase-title-group h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .phase-title-group span {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        .exercise-list {
+            padding: 6px 10px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* Exercise Item Card */
+        .exercise-item {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px;
+            cursor: pointer;
+        }
+
+        .exercise-item:active {
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .exercise-main-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .exercise-info h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+
+        .exercise-meta {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            display: flex;
+            gap: 10px;
+        }
+
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 3px 8px;
+            border-radius: 12px;
+            background: #334155;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .status-badge.completed {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--accent-green);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        /* Exercise Details inside List Card */
+        .exercise-detail-panel {
+            display: none;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border-color);
+        }
+
+        .exercise-item.active .exercise-detail-panel {
+            display: block;
+        }
+
+        .diagram-box {
+            background: #0f172a;
+            border-radius: 8px;
+            padding: 8px;
+            text-align: center;
+            margin-bottom: 10px;
+            border: 1px solid #334155;
+        }
+
+        .diagram-box svg {
+            width: 100%;
+            max-width: 260px;
+            height: 110px;
+        }
+
+        .instruction-text {
+            font-size: 0.85rem;
+            line-height: 1.45;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+        }
+
+        .tips-text {
+            font-size: 0.78rem;
+            color: var(--accent-amber);
+            background: rgba(245, 158, 11, 0.1);
+            padding: 6px 8px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        .btn-start-ex {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent-blue);
+            color: #0f172a;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+
+        /* Mobile Timer Modal Overlay */
+        .timer-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #0f172a;
+            z-index: 1000;
+            flex-direction: column;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .timer-modal.active {
+            display: flex;
+        }
+
+        .modal-header {
+            position: sticky;
+            top: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(8px);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            z-index: 10;
+        }
+
+        .close-modal-btn {
+            background: #1e293b;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-size: 0.82rem;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            flex: 1;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            max-width: 500px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .timer-status-tag {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            background: rgba(56, 189, 248, 0.1);
+            padding: 4px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        .timer-modal.resting .timer-status-tag {
+            color: var(--accent-amber);
+            background: rgba(245, 158, 11, 0.1);
+            border-color: rgba(245, 158, 11, 0.2);
+        }
+
+        .timer-exercise-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .timer-set-info {
+            font-size: 0.88rem;
+            color: var(--accent-amber);
+            font-weight: 600;
+        }
+
+        /* Circular Timer Display */
+        .circle-timer-container {
+            position: relative;
+            width: 160px;
+            height: 160px;
+            margin: 4px 0;
+        }
+
+        .circle-timer-svg {
+            transform: rotate(-90deg);
+            width: 160px;
+            height: 160px;
+        }
+
+        .circle-bg {
+            fill: none;
+            stroke: #1e293b;
+            stroke-width: 10;
+        }
+
+        .circle-progress {
+            fill: none;
+            stroke: var(--accent-blue);
+            stroke-width: 10;
+            stroke-linecap: round;
+            stroke-dasharray: 439.82;
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 1s linear, stroke 0.3s ease;
+        }
+
+        .timer-modal.resting .circle-progress {
+            stroke: var(--accent-amber);
+        }
+
+        .circle-timer-text {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.5rem;
+            font-weight: 800;
+            font-family: monospace;
+        }
+
+        /* Action Spec & Stick Figure Card inside Timer */
+        .timer-guide-card {
+            width: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .timer-svg-box {
+            background: #0f172a;
+            border-radius: 8px;
+            padding: 6px;
+            text-align: center;
+            margin-bottom: 10px;
+            border: 1px solid #334155;
+        }
+
+        .timer-svg-box svg {
+            width: 100%;
+            max-width: 240px;
+            height: 100px;
+        }
+
+        .timer-guide-desc {
+            font-size: 0.82rem;
+            line-height: 1.4;
+            color: #cbd5e1;
+            margin-bottom: 6px;
+        }
+
+        .timer-guide-tips {
+            font-size: 0.78rem;
+            color: var(--accent-amber);
+            background: rgba(245, 158, 11, 0.1);
+            padding: 6px 8px;
+            border-radius: 6px;
+        }
+
+        /* Next Preview Pill */
+        .next-preview-box {
+            width: 100%;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .next-preview-box strong {
+            color: var(--text-main);
+        }
+
+        /* Sticky Controls at Bottom */
+        .modal-footer {
+            position: sticky;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(8px);
+            padding: 12px 16px;
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .btn-ctrl {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .btn-pause { background: #334155; color: white; }
+        .btn-skip { background: rgba(244, 63, 94, 0.2); color: var(--accent-rose); border: 1px solid rgba(244, 63, 94, 0.4); }
+
+        .stick-figure {
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-top">
+            <h1>床上减脂塑形</h1>
+            <!-- Intensity Level Switcher -->
+            <div class="intensity-toggle">
+                <button class="intensity-btn active" id="btn-mode-std" onclick="setIntensityMode('STD')">标准 30分</button>
+                <button class="intensity-btn" id="btn-mode-pro" onclick="setIntensityMode('PRO')">进阶 40分 🔥</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Overall Workout Progress -->
+    <div class="progress-card">
+        <div class="progress-header">
+            <span>今日进度</span>
+            <span id="progress-percent-text">0 / 12 完成</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="overall-progress-bar"></div>
+        </div>
+    </div>
+
+    <!-- Workout Phases Container -->
+    <div id="workout-phases-container"></div>
+
+    <!-- Fullscreen Focus Timer Modal -->
+    <div class="timer-modal" id="timer-modal">
+        <div class="modal-header">
+            <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-muted);" id="modal-phase-tag">阶段一</span>
+            <button class="close-modal-btn" onclick="closeTimerModal()">退出训练</button>
+        </div>
+
+        <div class="modal-body">
+            <div class="timer-status-tag" id="timer-status-title">💪 运动中</div>
+            <div class="timer-exercise-name" id="timer-ex-name">双臂过头延伸＋胸腔呼吸</div>
+            <div class="timer-set-info" id="timer-set-info">第 1 / 1 组</div>
+
+            <!-- Countdown Ring -->
+            <div class="circle-timer-container">
+                <svg class="circle-timer-svg">
+                    <circle class="circle-bg" cx="80" cy="80" r="70"></circle>
+                    <circle class="circle-progress" id="timer-circle-progress" cx="80" cy="80" r="70"></circle>
+                </svg>
+                <div class="circle-timer-text" id="timer-countdown-text">60</div>
+            </div>
+
+            <!-- SVG Diagram + Instructions Card directly in Timer -->
+            <div class="timer-guide-card">
+                <div class="timer-svg-box" id="timer-svg-container"></div>
+                <div class="timer-guide-desc" id="timer-guide-desc">动作要领加载中...</div>
+                <div class="timer-guide-tips" id="timer-guide-tips">注意事项加载中...</div>
+            </div>
+
+            <div class="next-preview-box" id="next-preview-box">
+                接下来：<strong id="next-ex-name">---</strong>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn-ctrl btn-pause" id="btn-pause-resume" onclick="togglePauseResume()">暂停</button>
+            <button class="btn-ctrl btn-skip" onclick="skipCurrentState()">跳过</button>
+        </div>
+    </div>
+
+    <script>
+        // Intensity Multiplier Configuration
+        let intensityMode = 'STD'; // 'STD' = Standard (30m), 'PRO' = Advanced (40m)
+
+        // Raw Base Workout Structure Data
+        const rawWorkoutData = [
+            {
+                phaseId: 1,
+                phaseClass: "p1",
+                phaseTitle: "一、热身激活",
+                durationStd: "5分钟",
+                durationPro: "6分钟",
+                exercises: [
+                    {
+                        id: "p1_1",
+                        name: "1. 双臂过头延伸＋胸腔呼吸",
+                        stdWork: 60, stdRest: 10, stdSets: 1,
+                        proWork: 75, proRest: 10, proSets: 1,
+                        desc: "平躺，双手向头顶尽量延伸，脚尖向下勾。深吸气使胸腹膨胀，深呼气收紧腹部。",
+                        tips: "保持平缓，不憋气，唤醒全身血液循环。",
+                        svg: `<svg viewBox="0 0 300 130">
+                            <line x1="20" y1="100" x2="280" y2="100" stroke="#334155" stroke-width="4"/>
+                            <circle cx="210" cy="90" r="10" fill="none" stroke="#38bdf8" stroke-width="4"/>
+                            <path d="M 200 92 L 80 92" stroke="#38bdf8" stroke-width="5" class="stick-figure"/>
+                            <path d="M 195 92 L 260 92" stroke="#38bdf8" stroke-width="4" class="stick-figure"/>
+                            <path d="M 260 82 L 275 82 M 270 77 L 275 82 L 270 87" stroke="#f59e0b" stroke-width="3" fill="none"/>
+                            <text x="150" y="40" fill="#94a3b8" font-size="12" text-anchor="middle">向两端拉长身体</text>
+                        </svg>`
+                    },
+                    {
+                        id: "p1_2",
+                        name: "2. 双膝抱胸摇摆",
+                        stdWork: 60, stdRest: 10, stdSets: 1,
+                        proWork: 75, proRest: 10, proSets: 1,
+                        desc: "屈膝抱住双膝拉近胸部，左右微微摇晃身体，放松腰椎和背部。",
+                        tips: "头部贴床放松，动作幅度小且平缓。",
+                        svg: `<svg viewBox="0 0 300 130">
+                            <line x1="20" y1="100" x2="280" y2="100" stroke="#334155" stroke-width="4"/>
+                            <circle cx="220" cy="90" r="10" fill="none" stroke="#38bdf8" stroke-width="4"/>
+                            <path d="M 210 92 L 140 92" stroke="#38bdf8" stroke-width="5" class="stick-figure"/>
+                            <path d="M 140 92 L 140 50 L 160 80" stroke="#38bdf8" stroke-width="5" class="stick-figure"/>
+                            <path d="M 180 92 L 145 65" stroke="#38bdf8" stroke-width="4" class="stick-figure"/>
+                            <path d="M 120 60 Q 140 40 160 60" stroke="#f59e0b" stroke-width="3" fill="none"/>
+                        </svg>`
+                    },
+                    {
+                        id: "p1_3",
+                        name: "3. 空中踩单车（热身）",
+                        stdWork: 90, stdRest: 10, stdSets: 1,
+                        proWork: 120, proRest: 10, proSets: 1,
+                        desc: "双腿抬起在空中平缓顺/逆时针踩动，激活下肢与髋关节。",
+                        tips: "保持匀速，下腰部紧贴床面。",
+                        svg: `<svg viewBox="0 0 300 130">
+                            <line x1="20" y1="100" x2="280" y2="100" stroke="#334155" stroke-width="4"/>
+                            <circle cx="220" cy="90" r="10" fill="none" stroke="#38bdf8" stroke-width="4"/>
+                            <path d="M 210 92 L 140 92" stroke="#38bdf8" stroke-width="5" class="stick-figure"/>
+                            <path d="M 140 92 L 110 55 L 150 40" stroke="#38bdf8" stroke-width="4" class="stick-figure"/>
+                            <path d="M 140 92 L 150 70 L 100 80" stroke="#38bdf8" stroke-width="4" class="stick-figure"/>
+                            <path d="M 110 35 A 20 20 0 1 1 90 60" stroke="#f59e0b" stroke-width="3" fill="none" stroke-dasharray="4 2"/>
+                        </svg>`
+                    },
+                    {
+                        id: "p1_4",
+                        name: "4. 踝关节绕环",
+                        stdWork: 60, stdRest: 10, stdSets: 1,
+                        proWork: 60, proRest: 10, proSets: 1,
+                        desc: "双脚抬起，顺时针、逆时针交替大范围转动脚踝。",
+                        tips: "充分放松小腿肌肉与跟腱。",
+                        svg: `<svg viewBox="0 0 300 130">
+                            <line x1="20" y1="100" x2="280" y2="100" stroke="#334155" stroke-width="4"/>
+                            <circle cx="230" cy="90" r="10" fill="none" stroke="#38bdf8" stroke-width="4"/>
+                            <path d="M 220 92 L 140 92 L 90 40" stroke="#38bdf8" stroke-width="5" class="stick-figure"/>
+                            <path d="M 90 25 A 12 12 0 1 1 75 40" stroke="#f59e0b" stroke-width="3" fill="none"/>
+                        </svg>`
+                    }
+                ]
+            },
+            {
+                phaseId: 2,
+                phaseClass: "p2",
+                phaseTitle: "二、核心与下肢燃脂",
+                durationStd: "10分钟",
+                durationPro: "14分钟 🔥",
+                exercises: [
+                    {
+                        id: "p2_1",
+                        name: "1. 仰卧交替抬腿",
+                        stdWork: 45, stdRest: 15, stdSets: 3,
+                        proWork: 50, proRest: 10, proSets: 4,
+                        desc: "平躺，双腿抬高约45度，左右腿像剪刀一样交替上下摆动。",
+                        tips: "⚠️ 下腰部必须紧贴床面！不要悬空，防止腰部发力代偿。",
+                        svg: `<svg viewBox="0 0 300 130">
+                            <line x1="20" y1="100" x2="280" y2="100" stroke="#334155" stroke-width="4"/>
+                            <circle cx="230" cy="90" r="10" fill="none" stroke="#38bdf8" stroke-width="4"/>
+                            <path d="M 220 92 L 160 92" stroke="#38bdf8" stroke-width="5" class="stick-figure"/>
+                            <path d="M 160 92 L 60 92" stroke="#64748b" stroke-width="4" class="stick-figure"/>
+                            <path d="M 160 92 L 80 35" stroke="#38bdf8" stroke-width="5" class="stick-figure"/>
+                            <path d="M 70 65 L 70 30 M 65 38 L 70 30 L 75 38" stroke="#f59e0b" stroke-width="3" fill="none"/>
+                        </svg>`
+                    },
+                    {
+                        id: "p2_2",
+                        name: "2. 空中单车（加强版）",
+                        stdWork: 45, stdRest: 15, stdSets: 3,
+                        proWork: 50, proRest: 10, proSets: 4,
+                        desc: "双手轻扣头后，手肘与对侧膝盖交替靠近，扭转腹斜肌。",
+                        tips: "用腹肌带动上半身抬起，切勿用力硬拉脖子。",
+                        svg: `<svg viewBox="0 0 300 130">
+                            <line x1="20" y1="100" x2="280" y2="100" stroke="#334155" stroke-width="4"/>
+                            <path d="M 190 80 L 140 92" stroke="#38bdf8" stroke-width="5" class="stick-figure"/>
+                            <circle cx="205" cy="70" r="10" fill="none" stroke="#38bdf8" stroke-width="4"/>
+                            <path d="M 195 78 L 140 60" stroke="#38bdf8" stroke-width="4" class="stick-figure"/>
+                            <path d="M 140 92 L 130 55 L 80 65" stroke="#38bdf8" stroke-width="4" class="stick-figure"/>
+                        </svg>`
+                    },
+                    {
+                        id: "p2_3",
+                        name: "3. 仰卧卷腹 / 触脚尖",
+                        stdWork: 45, stdRest: 15, stdSets: 4,
+                        proWork: 50, proRest: 10, proSets: 4,
+                        desc: "屈膝平放，腹肌发力抬起上背部，双手伸手触摸脚踝或膝盖，停留1秒后还原。",
+                        tips: "下巴微收，顶峰收缩感受上腹紧绷。",
+                        svg: `<svg viewBox="0 0 300 130">
+                            <line x1="20" y1="100" x2="280" y2="100" stroke="#334155" stroke-width="4"/>
+                            <path d="M 130 92 L 90 55 L 60 92" stroke="#38bdf8" stroke-width="5" class="stick-figure"/>
+                            <path d="M 130 92 L 185 70" stroke="#38bdf8" stroke-width="5" class="stick-figure"/>
+                            <circle cx="200" cy="60" r="10" fill="none" stroke="#38bdf8" stroke-width="4"/>
+                            <path d="M 175 75 L 120 60" stroke="#38bdf8" stroke-width="4" class="stick-figure"/>
+                        </svg>`
+                    }
+                ]
+            },
+            {
+                phaseId: 3,
+                phaseClass: "p3",
+                phaseTitle: "三、臀腿与力量强化",
+                durationStd: "10分钟",
+                durationPro: "14分钟 🔥",
+                exercises: [
+                    {
+                        id: "p3_1",
+                        name: "1. 臀桥",
+                        stdWork: 45, stdRest: 15, stdSets: 4,
+                        proWork: 50, proRest: 10, proSets: 5,
+                        desc: "屈膝平躺，臀部发力将髋部向上顶起至肩膀到膝盖一直线，顶部停留2秒。",
+                        tips: "臀部夹紧发力，避免腰部向上过度反弓。",
+                        svg: `<svg viewBox="0 0 300 130">
+                            <line x1="20" y1="100" x2="280" y2="100" stroke="#334155" stroke-width="4"/>
+                            <circle cx="230" cy="90" r="10" fill="none" stroke="#38bdf8" stroke-width="4"/>
+                            <path d="M 220 92 L 150 50 L 90 92" stroke="#38bdf8" stroke-width="5" fill="none" class="stick-figure"/>
+                            <path d="M 150 85 L 150 60 M 145 68 L 150 60 L 155 68" stroke="#f59e0b" stroke-width="3" fill="none"/>
+                        </svg>`
+                    },
+                    {
+                        id: "p3_2",
+                        name: "2. 侧卧抬腿",
+                        stdWork: 45, stdRest: 15, stdSets: 4,
+                        proWork: 50, proRest: 10, proSets: 4,
+                        desc: "身体侧卧，上方腿保持伸直缓慢抬高至60度后再还原（不贴床）。左右交替。",
+                        tips: "身体保持平直不前后晃动，感觉臀外侧酸胀。",
+                        svg: `<svg viewBox="0 0 300 130">
+                            <line x1="20" y1="100" x2="280" y2="100" stroke="#334155" stroke-width="4"/>
+                            <circle cx="50" cy="80" r="10" fill="none" stroke="#38bdf8" stroke-width="4"/>
+                            <path d="M 60 85 L 130 92" stroke="#38bdf8" stroke-width="5" class="stick-figure"/>
+                            <path d="M 130 92 L 240 92" stroke="#64748b" stroke-width="4" class="stick-figure"/>
+                            <path d="M 130 92 L 220 45" stroke="#38bdf8" stroke-width="5" class="stick-figure"/>
+                            <path d="M 200 75 L 200 55 M 195 62 L 200 55 L 205 62" stroke="#f59e0b" stroke-width="3" fill="none"/>
+                        </svg>`
+                    },
+                    {
+                        id: "p3_3",
+                        name: "3. 床上跪姿俯卧撑",
+                        stdWork: 45, stdRest: 15, stdSets: 2,
+                        proWork: 50, proRest: 10, proSets: 3,
+                        desc: "双膝跪床，双手撑床与肩同宽，躯干呈直线向下降再用力推起。",
+                        tips: "核心全程收紧，不塌腰、不耸肩。",
+                        svg: `<svg viewBox="0 0 300 130">
+                            <line x1="20" y1="100" x2="280" y2="100" stroke="#334155" stroke-width="4"/>
+                            <path d="M 70 92 L 160 60 L 195 75" stroke="#38bdf8" stroke-width="5" fill="none" class="stick-figure"/>
+                            <path d="M 185 70 L 185 92" stroke="#38bdf8" stroke-width="4" class="stick-figure"/>
+                            <circle cx="210" cy="60" r="10" fill="none" stroke="#38bdf8" stroke-width="4"/>
+                        </svg>`
+                    }
+                ]
+            },
+            {
+                phaseId: 4,
+                phaseClass: "p4",
+                phaseTitle: "四、拉伸与放松",
+                durationStd: "5分钟",
+                durationPro: "6分钟",
+                exercises: [
+                    {
+                        id: "p4_1",
+                        name: "1. 猫狗式拉伸",
+                        stdWork: 90, stdRest: 10, stdSets: 1,
+                        proWork: 90, proRest: 10, proSets: 1,
+                        desc: "四足跪姿，吸气抬头塌腰，呼气拱背低头，交替缓慢延伸脊柱。",
+                        tips: "配合呼吸，动作轻柔顺畅。",
+                        svg: `<svg viewBox="0 0 300 130">
+                            <line x1="20" y1="100" x2="280" y2="100" stroke="#334155" stroke-width="4"/>
+                            <path d="M 100 92 L 100 65 L 180 50 L 180 92" stroke="#38bdf8" stroke-width="5" fill="none" class="stick-figure"/>
+                            <circle cx="200" cy="55" r="10" fill="none" stroke="#38bdf8" stroke-width="4"/>
+                            <path d="M 110 65 Q 140 40 170 55" stroke="#f59e0b" stroke-width="3" fill="none" stroke-dasharray="4 2"/>
+                        </svg>`
+                    },
+                    {
+                        id: "p4_2",
+                        name: "2. 婴儿式伸展",
+                        stdWork: 90, stdRest: 10, stdSets: 1,
+                        proWork: 90, proRest: 10, proSets: 1,
+                        desc: "臀部坐脚跟，手臂向前伸直贴床，头部贴床保持深呼吸。",
+                        tips: "感受背部与腋下深度拉伸放松。",
+                        svg: `<svg viewBox="0 0 300 130">
+                            <line x1="20" y1="100" x2="280" y2="100" stroke="#334155" stroke-width="4"/>
+                            <path d="M 60 92 L 75 70 L 110 88 L 200 92" stroke="#38bdf8" stroke-width="5" fill="none" class="stick-figure"/>
+                            <path d="M 110 88 L 220 92" stroke="#38bdf8" stroke-width="4" class="stick-figure"/>
+                            <circle cx="130" cy="88" r="9" fill="none" stroke="#38bdf8" stroke-width="4"/>
+                        </svg>`
+                    },
+                    {
+                        id: "p4_3",
+                        name: "3. 仰卧扭转",
+                        stdWork: 120, stdRest: 0, stdSets: 1,
+                        proWork: 120, proRest: 0, proSets: 1,
+                        desc: "平躺双臂打开，双膝向左倾倒头转向右，保持1分钟后换边。",
+                        tips: "双肩贴床，放松腰背肌肉。",
+                        svg: `<svg viewBox="0 0 300 130">
+                            <line x1="20" y1="100" x2="280" y2="100" stroke="#334155" stroke-width="4"/>
+                            <circle cx="150" cy="50" r="10" fill="none" stroke="#38bdf8" stroke-width="4"/>
+                            <path d="M 150 60 L 150 92" stroke="#38bdf8" stroke-width="5" class="stick-figure"/>
+                            <path d="M 80 65 L 220 65" stroke="#38bdf8" stroke-width="4" class="stick-figure"/>
+                            <path d="M 150 92 L 200 80 L 220 92" stroke="#f59e0b" stroke-width="5" fill="none" class="stick-figure"/>
+                        </svg>`
+                    }
+                ]
+            }
+        ];
+
+        // Active Calculated Workout Data
+        let workoutData = [];
+
+        function buildWorkoutData() {
+            const isPro = intensityMode === 'PRO';
+            workoutData = rawWorkoutData.map(phase => {
+                return {
+                    phaseId: phase.phaseId,
+                    phaseClass: phase.phaseClass,
+                    phaseTitle: phase.phaseTitle,
+                    durationText: isPro ? phase.durationPro : phase.durationStd,
+                    exercises: phase.exercises.map(ex => {
+                        return {
+                            id: ex.id,
+                            name: ex.name,
+                            workSec: isPro ? ex.proWork : ex.stdWork,
+                            restSec: isPro ? ex.proRest : ex.stdRest,
+                            totalSets: isPro ? ex.proSets : ex.stdSets,
+                            desc: ex.desc,
+                            tips: ex.tips,
+                            svg: ex.svg
+                        };
+                    })
+                };
+            });
+        }
+
+        // Intensity Switch Handler
+        function setIntensityMode(mode) {
+            intensityMode = mode;
+            const btnStd = document.getElementById('btn-mode-std');
+            const btnPro = document.getElementById('btn-mode-pro');
+
+            if (mode === 'PRO') {
+                btnStd.className = 'intensity-btn';
+                btnPro.className = 'intensity-btn pro-active';
+            } else {
+                btnStd.className = 'intensity-btn active';
+                btnPro.className = 'intensity-btn';
+            }
+
+            buildWorkoutData();
+            renderPhases();
+            updateOverallProgress();
+        }
+
+        // State Tracking
+        let completedExercises = new Set();
+        let currentPhaseIdx = 0;
+        let currentExIdx = 0;
+        let currentSet = 1;
+        let timerState = 'IDLE'; // IDLE, WORK, REST, PAUSED
+        let previousState = 'WORK';
+        let timeRemaining = 0;
+        let totalStateDuration = 0;
+        let timerInterval = null;
+        let audioCtx = null;
+
+        // Render UI
+        function renderPhases() {
+            const container = document.getElementById('workout-phases-container');
+            container.innerHTML = '';
+
+            workoutData.forEach((phase, pIdx) => {
+                const phaseEl = document.createElement('div');
+                phaseEl.className = 'phase-module';
+
+                let exListHtml = '';
+                phase.exercises.forEach((ex, eIdx) => {
+                    const isDone = completedExercises.has(ex.id);
+                    exListHtml += `
+                        <div class="exercise-item" id="ex-item-${ex.id}" onclick="toggleExDetail('${ex.id}', event)">
+                            <div class="exercise-main-row">
+                                <div class="exercise-info">
+                                    <h3>${ex.name}</h3>
+                                    <div class="exercise-meta">
+                                        <span>⏱️ ${ex.workSec}秒/组</span>
+                                        <span>🔄 ${ex.totalSets}组</span>
+                                    </div>
+                                </div>
+                                <span class="status-badge ${isDone ? 'completed' : ''}">${isDone ? '已完成 ✓' : '未开始'}</span>
+                            </div>
+                            <div class="exercise-detail-panel">
+                                <div class="diagram-box">${ex.svg}</div>
+                                <div class="instruction-text">${ex.desc}</div>
+                                <div class="tips-text">💡 关键要点：${ex.tips}</div>
+                                <button class="btn-start-ex" onclick="startExerciseFromUI(${pIdx}, ${eIdx}, event)">开始动作</button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                phaseEl.innerHTML = `
+                    <div class="phase-header ${phase.phaseClass}" onclick="togglePhaseModule(this)">
+                        <div class="phase-title-group">
+                            <h2>${phase.phaseTitle}</h2>
+                            <span>${phase.durationText}</span>
+                        </div>
+                        <span style="font-size:0.8rem; color:var(--text-muted);">展开 ▼</span>
+                    </div>
+                    <div class="exercise-list">
+                        ${exListHtml}
+                    </div>
+                `;
+                container.appendChild(phaseEl);
+            });
+        }
+
+        function toggleExDetail(exId, event) {
+            if (event.target.tagName === 'BUTTON') return;
+            const item = document.getElementById(`ex-item-${exId}`);
+            item.classList.toggle('active');
+        }
+
+        function togglePhaseModule(headerEl) {
+            const list = headerEl.nextElementSibling;
+            if (list.style.display === 'none') {
+                list.style.display = 'flex';
+            } else {
+                list.style.display = 'none';
+            }
+        }
+
+        // Web Audio Synthesizer Beeps
+        function playSound(freq = 440, type = 'sine', duration = 0.2) {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {
+                console.log("Audio not active");
+            }
+        }
+
+        // Timer Logic
+        function startExerciseFromUI(pIdx, eIdx, event) {
+            if (event) event.stopPropagation();
+            currentPhaseIdx = pIdx;
+            currentExIdx = eIdx;
+            currentSet = 1;
+            openTimerModal();
+            startWorkState();
+        }
+
+        function openTimerModal() {
+            document.body.classList.add('modal-open');
+            document.getElementById('timer-modal').classList.add('active');
+        }
+
+        function closeTimerModal() {
+            clearInterval(timerInterval);
+            timerState = 'IDLE';
+            document.body.classList.remove('modal-open');
+            document.getElementById('timer-modal').classList.remove('active');
+            updateOverallProgress();
+            renderPhases();
+        }
+
+        function startWorkState() {
+            timerState = 'WORK';
+            const modal = document.getElementById('timer-modal');
+            modal.classList.remove('resting');
+
+            const phase = workoutData[currentPhaseIdx];
+            const ex = phase.exercises[currentExIdx];
+
+            document.getElementById('modal-phase-tag').innerText = phase.phaseTitle;
+            document.getElementById('timer-status-title').innerText = "💪 运动中";
+            document.getElementById('timer-ex-name').innerText = ex.name;
+            document.getElementById('timer-set-info').innerText = `第 ${currentSet} / ${ex.totalSets} 组`;
+
+            // Insert Stick Figure SVG, Instruction & Tips into Timer Card
+            document.getElementById('timer-svg-container').innerHTML = ex.svg;
+            document.getElementById('timer-guide-desc').innerText = ex.desc;
+            document.getElementById('timer-guide-tips').innerText = "💡 关键： " + ex.tips;
+
+            timeRemaining = ex.workSec;
+            totalStateDuration = ex.workSec;
+
+            updateNextPreview();
+            updateTimerDisplay();
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(tick, 1000);
+            playSound(600, 'triangle', 0.3);
+        }
+
+        function startRestState() {
+            timerState = 'REST';
+            const modal = document.getElementById('timer-modal');
+            modal.classList.add('resting');
+
+            const phase = workoutData[currentPhaseIdx];
+            const ex = phase.exercises[currentExIdx];
+
+            document.getElementById('timer-status-title').innerText = "☕ 休息时间";
+            document.getElementById('timer-set-info').innerText = `保持深呼吸，准备下一组/动作`;
+
+            timeRemaining = ex.restSec;
+            totalStateDuration = ex.restSec;
+
+            updateNextPreview();
+            updateTimerDisplay();
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(tick, 1000);
+            playSound(400, 'sine', 0.4);
+        }
+
+        function updateNextPreview() {
+            const phase = workoutData[currentPhaseIdx];
+            const ex = phase.exercises[currentExIdx];
+            const previewEl = document.getElementById('next-preview-box');
+
+            if (timerState === 'WORK') {
+                if (currentSet < ex.totalSets) {
+                    previewEl.innerHTML = `本组结束：<strong>休息 ${ex.restSec} 秒 (还剩 ${ex.totalSets - currentSet} 组)</strong>`;
+                } else if (currentExIdx + 1 < phase.exercises.length) {
+                    const nextEx = phase.exercises[currentExIdx + 1];
+                    previewEl.innerHTML = `下一个动作：<strong>${nextEx.name}</strong>`;
+                } else if (currentPhaseIdx + 1 < workoutData.length) {
+                    const nextPhase = workoutData[currentPhaseIdx + 1];
+                    previewEl.innerHTML = `下一阶段：<strong>${nextPhase.phaseTitle}</strong>`;
+                } else {
+                    previewEl.innerHTML = `🎉 已经是最后一个动作啦！加油！`;
+                }
+            } else if (timerState === 'REST') {
+                if (currentSet < ex.totalSets) {
+                    previewEl.innerHTML = `下一组：<strong>${ex.name} (${currentSet + 1}/${ex.totalSets}组)</strong>`;
+                } else if (currentExIdx + 1 < phase.exercises.length) {
+                    const nextEx = phase.exercises[currentExIdx + 1];
+                    previewEl.innerHTML = `即将开始：<strong>${nextEx.name}</strong>`;
+                } else if (currentPhaseIdx + 1 < workoutData.length) {
+                    const nextPhase = workoutData[currentPhaseIdx + 1];
+                    previewEl.innerHTML = `即将进入：<strong>${nextPhase.phaseTitle}</strong>`;
+                }
+            }
+        }
+
+        function tick() {
+            if (timerState === 'PAUSED') return;
+
+            timeRemaining--;
+            updateTimerDisplay();
+
+            if (timeRemaining <= 3 && timeRemaining > 0) {
+                playSound(500, 'sine', 0.15);
+            }
+
+            if (timeRemaining <= 0) {
+                clearInterval(timerInterval);
+                handleStateCompletion();
+            }
+        }
+
+        function handleStateCompletion() {
+            const phase = workoutData[currentPhaseIdx];
+            const ex = phase.exercises[currentExIdx];
+
+            if (timerState === 'WORK') {
+                playSound(800, 'triangle', 0.5);
+
+                if (currentSet < ex.totalSets) {
+                    startRestState();
+                } else {
+                    completedExercises.add(ex.id);
+                    updateOverallProgress();
+
+                    if (currentExIdx + 1 < phase.exercises.length) {
+                        startRestState();
+                    } else if (currentPhaseIdx + 1 < workoutData.length) {
+                        alert(`🎉 完成【${phase.phaseTitle}】！准备进入下一个阶段！`);
+                        currentPhaseIdx++;
+                        currentExIdx = 0;
+                        currentSet = 1;
+                        startRestState();
+                    } else {
+                        playSound(1000, 'sine', 0.8);
+                        alert(`🏆 完美！您已成功完成今天全部床上训练！`);
+                        closeTimerModal();
+                    }
+                }
+            } else if (timerState === 'REST') {
+                if (currentSet < ex.totalSets) {
+                    currentSet++;
+                    startWorkState();
+                } else {
+                    currentExIdx++;
+                    currentSet = 1;
+                    startWorkState();
+                }
+            }
+        }
+
+        function updateTimerDisplay() {
+            document.getElementById('timer-countdown-text').innerText = timeRemaining;
+
+            const circle = document.getElementById('timer-circle-progress');
+            const circumference = 2 * Math.PI * 70; // 439.82
+            const fraction = totalStateDuration > 0 ? (timeRemaining / totalStateDuration) : 0;
+            const offset = circumference * (1 - fraction);
+            circle.style.strokeDasharray = circumference;
+            circle.style.strokeDashoffset = offset;
+        }
+
+        function togglePauseResume() {
+            const btn = document.getElementById('btn-pause-resume');
+            if (timerState === 'PAUSED') {
+                timerState = previousState;
+                btn.innerText = "暂停";
+                btn.style.background = "#334155";
+            } else {
+                previousState = timerState;
+                timerState = 'PAUSED';
+                btn.innerText = "继续";
+                btn.style.background = "var(--accent-blue)";
+            }
+        }
+
+        function skipCurrentState() {
+            clearInterval(timerInterval);
+            handleStateCompletion();
+        }
+
+        function updateOverallProgress() {
+            const totalEx = 12;
+            const completedCount = completedExercises.size;
+            const percent = Math.round((completedCount / totalEx) * 100);
+
+            document.getElementById('progress-percent-text').innerText = `${completedCount} / ${totalEx} 完成 (${percent}%)`;
+            document.getElementById('overall-progress-bar').style.width = `${percent}%`;
+        }
+
+        // Initialize
+        window.onload = function() {
+            buildWorkoutData();
+            renderPhases();
+            updateOverallProgress();
+        };
+    </script>
+</body>
+</html>
+"""
+
+filename = "床上30分钟减脂塑形训练-v2.html"
+with open(filename, "w", encoding="utf-8") as f:
+    f.write(html_content)
+
+print(f"Updated File created successfully: {filename}")
